@@ -127,6 +127,8 @@ func (c *Conn) Close() error {
 	return nil
 }
 
+//SetCloseHandler sets the handler for when the Conn is closed, expectedly or not.
+//The code argument to h is the received close code or CloseNoStatusReceived if the close message is empty
 func (c *Conn) SetCloseHandler(f func(code int, text string)) {
 	c.closeHandler = f
 }

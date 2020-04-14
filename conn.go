@@ -56,7 +56,7 @@ func (c *Conn) reader() {
 		c.mu.RLock()
 		if f, ok := c.subscriptions[msg.ID]; !ok {
 			if c.debug {
-				fmt.Println("DEBUG: Message received for unknown subscription:", msg.ID)
+				fmt.Printf("DEBUG: Message received for unknown subscription: ID: %s, Type: %s, Payload: %s\n", msg.ID, msg.Type, string(msg.Payload))
 			}
 		} else {
 			go f(msg)
@@ -70,7 +70,7 @@ func (c *Conn) reader() {
 		}
 
 		if msg.Type != MessageTypeComplete && msg.Type != MessageTypeData && msg.Type != MessageTypeError && c.debug {
-			fmt.Println("DEBUG: Received unexpected Message with type:", msg.Type)
+			fmt.Printf("DEBUG: Received Message with unexpected type: ID: %s, Type: %s, Payload: %s\n", msg.ID, msg.Type, string(msg.Payload))
 		}
 	}
 }

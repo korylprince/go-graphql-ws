@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/gorilla/websocket"
@@ -173,9 +174,25 @@ func (c *Conn) Unsubscribe(id string) error {
 		return fmt.Errorf("Unable to write %s message: %v", MessageTypeStop, err)
 	}
 
-	c.mu.Lock()
-	delete(c.subscriptions, id)
-	c.mu.Unlock()
+	//if subscription still exists wait up to 5 seconds for complete message to arrive before deleting it
+	//this only matters in debug mode since the message is ignored when debug mode is off
+	if c.debug {
+		c.mu.Lock()
+		if _, ok := c.subscriptions[id]; ok {
+			c.subscriptions[id] = func(message *Message) {}
+			go func() {
+				time.Sleep(time.Second * 5)
+				c.mu.Lock()
+				delete(c.subscriptions, id)
+				c.mu.Unlock()
+			}()
+		}
+		c.mu.Unlock()
+	} else {
+		c.mu.Lock()
+		delete(c.subscriptions, id)
+		c.mu.Unlock()
+	}
 
 	return nil
 }

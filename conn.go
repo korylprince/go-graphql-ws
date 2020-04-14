@@ -69,7 +69,7 @@ func (c *Conn) reader() {
 			c.mu.Unlock()
 		}
 
-		if msg.Type != MessageTypeComplete && msg.Type != MessageTypeData && c.debug {
+		if msg.Type != MessageTypeComplete && msg.Type != MessageTypeData && msg.Type != MessageTypeError && c.debug {
 			fmt.Println("DEBUG: Received unexpected Message with type:", msg.Type)
 		}
 	}

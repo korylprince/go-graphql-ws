@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -40,6 +41,12 @@ func (c *Conn) reader() {
 				cErr := err.(*websocket.CloseError)
 				c.closeHandler(cErr.Code, cErr.Text)
 			}
+			if c.debug {
+				log.Println("DEBUG: Connection closed:", err)
+			}
+			return
+		}
+		if err != nil && strings.HasSuffix(err.Error(), "use of closed network connection") {
 			if c.debug {
 				log.Println("DEBUG: Connection closed:", err)
 			}

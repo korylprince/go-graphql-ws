@@ -24,7 +24,7 @@ type MessagePayloadStart struct {
 }
 type MessagePayloadData struct {
 	Data   json.RawMessage `json:"data"`
-	Errors []Error         `json:"errors,omitempty"`
+	Errors Errors          `json:"errors,omitempty"`
 }
 
 //Message is a GraphQL message. A Message's Payload can be JSON decoded into one of the MessagePayload* types if present

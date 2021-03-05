@@ -3,6 +3,7 @@ package graphql
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -38,7 +39,8 @@ func (c *Conn) reader() {
 		if websocket.IsUnexpectedCloseError(err) {
 			c.closeError = err
 			if c.closeHandler != nil {
-				cErr := err.(*websocket.CloseError)
+				cErr := new(websocket.CloseError)
+				errors.As(err, &cErr)
 				c.closeHandler(cErr.Code, cErr.Text)
 			}
 			if c.debug {
@@ -86,22 +88,22 @@ func (c *Conn) reader() {
 func (c *Conn) init(connectionParams *MessagePayloadConnectionInit) error {
 	msg := &Message{Type: MessageTypeConnectionInit}
 	if err := msg.SetPayload(connectionParams); err != nil {
-		return fmt.Errorf("Unable to marshal connectionParams: %v", err)
+		return fmt.Errorf("Unable to marshal connectionParams: %w", err)
 	}
 
 	err := c.conn.WriteJSON(msg)
 	if err != nil {
-		return fmt.Errorf("Unable to write %s message: %v", MessageTypeConnectionInit, err)
+		return fmt.Errorf("Unable to write %s message: %w", MessageTypeConnectionInit, err)
 	}
 
 	for {
 		msg := new(Message)
 		err = c.conn.ReadJSON(msg)
 		if websocket.IsUnexpectedCloseError(err) {
-			return fmt.Errorf("Unexpected close error: %v", err)
+			return fmt.Errorf("Unexpected close error: %w", err)
 		}
 		if err != nil {
-			return fmt.Errorf("Unable to parse message: %v", err)
+			return fmt.Errorf("Unable to parse message: %w", err)
 		}
 		switch msg.Type {
 		case MessageTypeConnectionAck:
@@ -124,12 +126,12 @@ func (c *Conn) Close() error {
 
 	err := c.conn.WriteJSON(&Message{Type: MessageTypeConnectionTerminate})
 	if err != nil {
-		return fmt.Errorf("Unable to write %s message: %v", MessageTypeConnectionTerminate, err)
+		return fmt.Errorf("Unable to write %s message: %w", MessageTypeConnectionTerminate, err)
 	}
 
 	err = c.conn.Close()
 	if err != nil {
-		return fmt.Errorf("Unable to close websocket connection: %v", err)
+		return fmt.Errorf("Unable to close websocket connection: %w", err)
 	}
 
 	return nil
@@ -152,7 +154,7 @@ func (c *Conn) Subscribe(payload *MessagePayloadStart, f func(message *Message))
 
 	m := &Message{Type: MessageTypeStart, ID: id}
 	if err := m.SetPayload(payload); err != nil {
-		return "", fmt.Errorf("Unable to marshal payload: %v", err)
+		return "", fmt.Errorf("Unable to marshal payload: %w", err)
 	}
 
 	c.mu.Lock()
@@ -163,7 +165,7 @@ func (c *Conn) Subscribe(payload *MessagePayloadStart, f func(message *Message))
 		c.mu.Lock()
 		delete(c.subscriptions, id)
 		c.mu.Unlock()
-		return "", fmt.Errorf("Unable to write %s message: %v", MessageTypeStart, err)
+		return "", fmt.Errorf("Unable to write %s message: %w", MessageTypeStart, err)
 	}
 
 	return id, nil
@@ -178,7 +180,7 @@ func (c *Conn) Unsubscribe(id string) error {
 	m := &Message{Type: MessageTypeStop, ID: id}
 
 	if err := c.conn.WriteJSON(m); err != nil {
-		return fmt.Errorf("Unable to write %s message: %v", MessageTypeStop, err)
+		return fmt.Errorf("Unable to write %s message: %w", MessageTypeStop, err)
 	}
 
 	//if subscription still exists wait up to 5 seconds for complete message to arrive before deleting it
@@ -216,12 +218,12 @@ func (c *Conn) Execute(ctx context.Context, payload *MessagePayloadStart) (data 
 		ch <- message
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Unable to subscribe: %v", err)
+		return nil, fmt.Errorf("Unable to subscribe: %w", err)
 	}
 
 	defer func() {
 		if uErr := c.Unsubscribe(id); err == nil && uErr != nil {
-			err = fmt.Errorf("Unable to unsubscribe: %v", uErr)
+			err = fmt.Errorf("Unable to unsubscribe: %w", uErr)
 		}
 	}()
 
@@ -236,7 +238,7 @@ func (c *Conn) Execute(ctx context.Context, payload *MessagePayloadStart) (data 
 			case MessageTypeData:
 				d := new(MessagePayloadData)
 				if err = json.Unmarshal(msg.Payload, d); err != nil {
-					return nil, fmt.Errorf("Unable to unmarshal %s message payload: %v", MessageTypeData, err)
+					return nil, fmt.Errorf("Unable to unmarshal %s message payload: %w", MessageTypeData, err)
 				}
 				return d, nil
 			case MessageTypeError:

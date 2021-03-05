@@ -3,6 +3,7 @@ package graphql_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -67,7 +68,7 @@ func ExampleConn_Execute_cancel() {
 	}()
 
 	_, err = conn.Execute(ctx, query)
-	log.Println("Canceled:", ctx.Err() == err)
+	log.Println("Canceled:", errors.Is(ctx.Err(), err))
 }
 
 func ExampleConn_Subscribe() {

@@ -29,7 +29,7 @@ func (d *Dialer) Dial(urlStr string, requestHeader http.Header, connectionParams
 func (d *Dialer) DialContext(ctx context.Context, urlStr string, requestHeader http.Header, connectionParams *MessagePayloadConnectionInit) (*Conn, *http.Response, error) {
 	conn, resp, err := d.Dialer.DialContext(ctx, urlStr, requestHeader)
 	if err != nil {
-		return nil, resp, fmt.Errorf("Unable to dial: %v", err)
+		return nil, resp, fmt.Errorf("Unable to dial: %w", err)
 	}
 
 	c := &Conn{
@@ -40,7 +40,7 @@ func (d *Dialer) DialContext(ctx context.Context, urlStr string, requestHeader h
 	}
 
 	if err = c.init(connectionParams); err != nil {
-		return nil, resp, fmt.Errorf("Unable to init: %v", err)
+		return nil, resp, fmt.Errorf("Unable to init: %w", err)
 	}
 
 	go c.reader()

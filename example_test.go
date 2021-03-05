@@ -34,6 +34,9 @@ func ExampleConn_Execute() {
 	if err != nil {
 		log.Fatalln("Unable to Execute:", err)
 	}
+	if len(payload.Errors) > 0 {
+		log.Fatalln("Unable to Execute:", payload.Errors)
+	}
 	log.Println("Payload Received:", string(payload.Data))
 }
 
@@ -88,8 +91,21 @@ func ExampleConn_Subscribe() {
 	}
 
 	id, err := conn.Subscribe(subscription, func(m *graphql.Message) {
+		if m.Type == graphql.MessageTypeError {
+			err := graphql.ParseError(m.Payload)
+			//handle err
+			_ = err
+			return
+		} else if m.Type == graphql.MessageTypeComplete {
+			//clean up
+			return
+		}
 		payload := new(graphql.MessagePayloadData)
 		if err := json.Unmarshal(m.Payload, payload); err != nil {
+			//handle error
+			return
+		}
+		if len(payload.Errors) > 0 {
 			//handle error
 			return
 		}
